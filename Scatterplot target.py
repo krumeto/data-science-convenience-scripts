@@ -8,8 +8,8 @@ def grouped_scatter_plot_with_conf(df, column_to_group, target_col, log_scale=Fa
   Returns a scatterplot of a column of interest ('column to group') and usually the target column ('target_col') and customizable confidence intervals.
 
   df: Pandas DataFrame
-  column_to_group, target_col: column names from df
-  log_scale: Boolean, default = False - plot x axis on log scale
+  column_to_group, target_col: column names from df. column_to_group is a feature which relationship with the target variable is to be reviewed. 
+  log_scale: Boolean, default = False - plot x axis on a log scale
   alpha_level: Float - Alpha level of the scatter points
   clip_count: int, default = 0. Allows to remove items from the dataset with less obeservation. For example, clip_count=30 removes the For example, clip_count=30 removes all observations with less than 30 occurrences. 
   bins_for_cut_count: int, default = 0. Cuts the target count column in n number of bins. Impacts the fit of the confidence intervals - the higher n, the higher the overfitting
