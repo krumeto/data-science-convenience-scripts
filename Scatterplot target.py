@@ -3,12 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def grouped_scatter_plot_with_conf(df, column_to_group, target_col, log_scale=False, alpha_level = 1, clip_count = 0, bins_for_cut_count=0, n_std_upper = 2, n_std_lower=1, fill_b_std=True, annotate_the_outliers=True):
+def grouped_scatter_plot_with_conf(df, column_to_group, target_col, agg_functions_list = ['mean', 'count'],  log_scale=False, alpha_level = 1, clip_count = 0, bins_for_cut_count=0, n_std_upper = 2, n_std_lower=1, fill_b_std=True, annotate_the_outliers=True):
   """
   Returns a scatterplot of a column of interest ('column to group') and usually the target column ('target_col') and customizable confidence intervals.
 
   df: Pandas DataFrame
   column_to_group, target_col: column names from df. column_to_group is a feature which relationship with the target variable is to be reviewed. 
+  agg_functions_list, list, default - ['mean', 'count']. A list of functions to be used for aggregation
   log_scale: Boolean, default = False - plot x axis on a log scale
   alpha_level: Float - Alpha level of the scatter points
   clip_count: int, default = 0. Allows to remove items from the dataset with less obeservation. For example, clip_count=30 removes the For example, clip_count=30 removes all observations with less than 30 occurrences. 
@@ -18,9 +19,9 @@ def grouped_scatter_plot_with_conf(df, column_to_group, target_col, log_scale=Fa
   annotate_the_outliers, Boolean, default = True. If true, annotates the outliers above the defined boundaries. 
   """
   
-  object_to_plot = df.groupby(column_to_group).agg({target_col: ['mean', 'count']}).sort_values(by=(target_col,  'count'), ascending = False)
-  target_mean_col = f'{target_col}_mean'
-  target_count_col = f'{target_col}_count'
+  object_to_plot = df.groupby(column_to_group).agg({target_col: agg_functions_list}).sort_values(by=(target_col,  'count'), ascending = False)
+  target_mean_col = f'{target_col}_{agg_functions_list[0]}'
+  target_count_col = f'{target_col}_{agg_functions_list[1]}'
   object_to_plot.columns = [target_mean_col, target_count_col]
   object_to_plot = object_to_plot.loc[object_to_plot[target_count_col]>clip_count, :] #Cut part of the data with low count values
 
@@ -33,8 +34,8 @@ def grouped_scatter_plot_with_conf(df, column_to_group, target_col, log_scale=Fa
 
   #Plot the scatterplot
   object_to_plot.plot.scatter(target_count_col, target_mean_col, figsize=((10,8)),logx=log_scale, alpha=alpha_level)
-  plt.title(f'Scatter plot of count of {column_to_group} vs. {column_to_group} mean value')
-  plt.ylabel(f'Mean {target_col}')
+  plt.title(f'Scatter plot of {agg_functions_list[1]} of {column_to_group} vs. {column_to_group} {agg_functions_list[0]} value')
+  plt.ylabel(f'{agg_functions_list[0]} {target_col}')
   if log_scale:
     plt.xlabel(f'Log of searches per {column_to_group}')
   else:
