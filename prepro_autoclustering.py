@@ -4,11 +4,14 @@ from sklearn.pipeline import make_pipeline
 from sklearn.metrics import silhouette_score
 from sklearn.cluster import KMeans
 
-def dataframe_to_kmeans_clusters(df, return_plot = False, min_clusters = 2, max_clusters = 10):
-    """Takes dataframe as inout, clusters the indexes of the DF in clusters with highest silhouette score"""
+def dataframe_to_kmeans_clusters(df, return_plot = False, min_clusters = 2, max_clusters = 10, annotate = False):
+    """Takes dataframe as input, clusters the indexes of the DF in clusters with highest silhouette score.
+    Returns a dictionary of the index as keys and cluster labels as values, ready to be mapped to a df with df['col'].map(results_dict)
+    Displays a PCA visualization for the user to assess the clusters validity"""
 
     #Replace infs with zeros
     df = df.replace({float("inf"):0, float("-inf"):0})
+    df = df.fillna(0)
     
     #PCA components calculations
     pipe = make_pipeline(StandardScaler(), PCA(n_components=2))
@@ -28,7 +31,15 @@ def dataframe_to_kmeans_clusters(df, return_plot = False, min_clusters = 2, max_
     best_score = silhouette_scores[best_index]
     
     kmeans_pipe = make_pipeline(StandardScaler(), KMeans(n_clusters = best_k))
-    y_pred = kmeans_pipe.fit_predict(df)
+    #y_pred = kmeans_pipe.fit_predict(df)
+    
+    #Implementation below brings stability to clusters label assignment 
+    kmeans_pipe.fit(df)
+    #Sorts the labels, the [::-1] reverses the order
+    idx = np.argsort(kmeans_pipe.named_steps['kmeans'].cluster_centers_.sum(axis=1))[::-1]
+    lut = np.zeros_like(idx)
+    lut[idx] = np.arange(best_k)
+    y_pred = lut[kmeans_pipe.named_steps['kmeans'].labels_] + 1 #The +1 allows clusters to start with 1
     
     #If return_plot is True, returns a plot of the silhouette scores and clusters, in addition to the clustering results
     if return_plot:
@@ -39,11 +50,14 @@ def dataframe_to_kmeans_clusters(df, return_plot = False, min_clusters = 2, max_
         ax1.set_ylabel("Silhouette score", fontsize=14)
         ax1.plot(best_k, best_score, "rs")
         
-        ax2.scatter(odds_transformed[:, 0], odds_transformed[:, 1], c=y_pred)
+        ax2.scatter(odds_transformed[:, 0], odds_transformed[:, 1], c=y_pred, alpha = 0.7)
         ax2.set_xlabel("first principal component")
         ax2.set_ylabel("second principal component")
-        for i, feature_contribution in enumerate(odds_transformed):
-            ax2.annotate(odds.index[i], feature_contribution)
+        
+        #If annotate is true, annotates the PCA chart
+        if annotate:
+            for i, feature_contribution in enumerate(odds_transformed):
+                ax2.annotate(df.index[i], feature_contribution)
         
         plt.show()
     
